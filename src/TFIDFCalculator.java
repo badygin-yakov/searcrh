@@ -23,7 +23,7 @@ public class TFIDFCalculator {
         }
 
 
-        String path = Settings.BASE_PATH + Settings.UNIQUEWORDS_FILE;
+        String path = Settings.BASE_PATH + "uniqWords1.txt";
         Scanner sc = null;
         ArrayList<Integer> wordIndex;
         ArrayList<String> allUniqWords = new ArrayList<String>();
@@ -51,8 +51,12 @@ public class TFIDFCalculator {
 
 
         int pageIndex = 0;
-        String tfIdf = Settings.TFIDF_FILE;
-        CSVWriter writerTfIdf;
+//        String tf = "tf2.csv";
+//        String idf = "idf2.csv";
+        String tfIdf = "tfIdf3.csv";
+//        CSVWriter writerTf = null;
+//        CSVWriter writerIdf = null;
+        CSVWriter writerTfIdf = null;
 
         String[] header = allUniqWords.toArray(new String[allUniqWords.size()]);
         String result = allUniqWords.toString();
@@ -60,9 +64,20 @@ public class TFIDFCalculator {
         System.out.println(result);
         header = result.split(",");
         try {
+//            Writer writerTfSM = new OutputStreamWriter(new FileOutputStream(tf, true), "UTF-8");
+//            Writer writerIdfSM = new OutputStreamWriter(new FileOutputStream(idf, true), "UTF-8");
             Writer writerTfIdfSM = new OutputStreamWriter(new FileOutputStream(tfIdf, true), "UTF-8");
+
+//            writerTf = new CSVWriter(writerTfSM, ';');
+//            writerIdf = new CSVWriter(writerIdfSM, ';');
             writerTfIdf = new CSVWriter(writerTfIdfSM, ';');
+
+//            writerTf.writeNext(header);
+//            writerIdf.writeNext(header);
             writerTfIdf.writeNext(header);
+
+//            writerTf.close();
+//            writerIdf.close();
             writerTfIdf.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -70,27 +85,50 @@ public class TFIDFCalculator {
 
 
         try {
+//            Writer writerTfSM = new OutputStreamWriter(new FileOutputStream(tf, true), "UTF-8");
+//            Writer writerIdfSM = new OutputStreamWriter(new FileOutputStream(idf, true), "UTF-8");
             Writer writerTfIdfSM = new OutputStreamWriter(new FileOutputStream(tfIdf, true), "UTF-8");
+//            writerTf = new CSVWriter(writerTfSM, ';');
+//            writerIdf = new CSVWriter(writerIdfSM, ';');
             writerTfIdf = new CSVWriter(writerTfIdfSM, ';');
             for (ArrayList<String> wordsListByPage : WordsByPage) {
                 pageIndex++;
                 System.out.println(pageIndex);
+//                ArrayList<String> recordTf = new ArrayList<>();
+//                recordTf.add(String.valueOf(pageIndex));
+//                ArrayList<String> recordIdf = new ArrayList<>();
+//                recordIdf.add(String.valueOf(pageIndex));
                 ArrayList<String> recordTfIdf = new ArrayList<>();
                 recordTfIdf.add(String.valueOf(pageIndex));
                 for (int i = 0; i < allUniqWords.size(); i++) {
+//                for (String uniqWord : allUniqWords) {
+//                    double tfValue = tf(wordsListByPage, allUniqWords.get(i));
+//                    double idfValue = idf(WordsByPage, allUniqWords.get(i));
                     double tfIdfValue = tfIdf(wordsListByPage, WordsByPage, allUniqWords.get(i));
+//                    recordTf.add(String.valueOf(tfValue > -1 ? tfValue : ""));
+//                    recordIdf.add(String.valueOf(idfValue > -1 ? idfValue : ""));
                     if (tfIdfValue == Double.NaN) {
                         recordTfIdf.add("");
                     } else {
                         recordTfIdf.add(String.valueOf(tfIdfValue));
                     }
                 }
+//                writerTf.writeNext(recordTf.toArray(new String[recordTf.size()]));
+//                if (pageIndex == 1) {
+//                    writerIdf.writeNext(recordIdf.toArray(new String[recordIdf.size()]));
+//                }
                 writerTfIdf.writeNext(recordTfIdf.toArray(new String[recordTfIdf.size()]));
             }
+//            writerTf.close();
+//            writerIdf.close();
             writerTfIdf.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void main(String[] args) {
+
     }
 
     class Reference {

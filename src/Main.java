@@ -9,15 +9,13 @@ public class Main {
 //        TFIDFCalculator tfIdf = new TFIDFCalculator();
 //        tfIdf.tfIdfInit();
 
-        CosineSimilarity cosineSimilarity = new CosineSimilarity();
+        Search search = new Search();
 
 
-        ArrayList<CosSimRate> cosSimRateArrayList = cosineSimilarity.getSearchResult("Экономить время");
+        ArrayList<CosSimRate> cosSimRate = search.getSearchResult("тщательный информация");
 
-        for (CosSimRate page : cosSimRateArrayList) {
-            if (page.getRate() > 0.0) {
-                System.out.println("rate:" + page.getRate() + " page:" + page.getPageIndex() + " " + page.getPageRef());
-            }
+        for (CosSimRate page : cosSimRate) {
+            System.out.println(page.getPageRef());
         }
     }
 }

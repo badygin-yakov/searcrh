@@ -3,13 +3,13 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.lang.*;
 
-public class CosineSimilarity {
+public class Search {
 
     public ArrayList<CosSimRate> getSearchResult(String searchLine) {
         ArrayList<Double> cosineSimilarity = new ArrayList<Double>();
         ArrayList<CosSimRate> sortResult = new ArrayList<CosSimRate>();
 
-        searchLine = searchLine.toLowerCase();
+        //Porter rtpoer = new Porter();
         String[] searchWords = searchLine.split(" ");
         ArrayList<String> searchWordsList = new ArrayList<String>();
         ArrayList<Integer> searchWordsCount = new ArrayList<Integer>();
@@ -33,7 +33,7 @@ public class CosineSimilarity {
             }
         }
 
-        //System.out.println(searchWordsList.size());
+        System.out.println(searchWordsList.size());
 
         ArrayList<ArrayList<Double>> queryValueRate = tfIdfCounter(searchWordsList);
         int maxDivision = 1;
@@ -41,6 +41,7 @@ public class CosineSimilarity {
             maxDivision = maxDivision < searchWordsCount.get(i) ? searchWordsCount.get(i) : maxDivision;
         }
 
+        //вес по всем документам по словам из поиска
         ArrayList<Double> queryRateByDoc = new ArrayList<>();
         for (int k = 0; k < queryValueRate.get(0).size(); k++) {
             double d = 0.0;
@@ -59,6 +60,7 @@ public class CosineSimilarity {
             }
         }
 
+        //расчетные вес запроса
         ArrayList<Double> queryRate = new ArrayList<>();
         for (int k = 0; k < queryValueRate.get(0).size(); k++) {
             double d = 0.0;
@@ -67,7 +69,7 @@ public class CosineSimilarity {
             }
             queryRate.add(Math.sqrt(d));
         }
-
+        //расчетные веса для всех слов по документам
         ArrayList<ArrayList<Double>> rateByPage = getTfIdf();
         ArrayList<Double> tfIdfRate = new ArrayList<>();
         for (ArrayList<Double> page : rateByPage) {
@@ -87,6 +89,7 @@ public class CosineSimilarity {
         boolean flag = true;
         for (int i = 0; i < sortResult.size(); i++) {
             if (sortResult.get(i).getRate() > 0.0) {
+                System.out.println("rate:" + sortResult.get(i).getRate() + " page:" + sortResult.get(i).getPageIndex() + " " + sortResult.get(i).getPageRef());
                 flag = false;
             }
         }
@@ -178,9 +181,12 @@ public class CosineSimilarity {
             }
 
             for (int i = 0; i < searchWordsList.size(); i++) {
+                //индек исковых слов
 
+                // ТУТ КАКАЯ-ТО ПРОБЛЕМА!
                 int index = header.indexOf(searchWordsList.get(i));
 
+                //расчет tfIdf искомых слов
                 ArrayList<Double> queryValueLine = new ArrayList<Double>();
                 for (ArrayList<String> pageValue : value) {
                     double d = Double.parseDouble(pageValue.get(index+1));
@@ -189,6 +195,26 @@ public class CosineSimilarity {
                 }
                 queryValue.add(queryValueLine);
             }
+
+//            for (int i = 0; i < searchWordsList.size(); i++) {
+//                for (int k = 0; k < tfIdfValue[0].length; k++) {
+//                    tfIdfValue[0][k] = tfIdfValue[0][k].trim();
+//                    if (searchWordsList.get(i).equals(tfIdfValue[0][k])) {
+//                        double d = 0.0;
+//                        try {
+//                            if (tfIdfValue[1][k].equals("Infinity")) {
+//                                queryTfidf.add(d);
+//                            } else {
+//                                d = Double.parseDouble(tfIdfValue[1][k]);
+//                                queryTfidf.add(d);
+//                            }
+//                        } catch (NumberFormatException e) {
+//                            d = 0.0;
+//                        }
+//                    }
+//
+//                }
+//            }
             bufferedReader.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -242,6 +268,7 @@ public class CosineSimilarity {
         q = BigDecimal.valueOf(q).setScale(6, BigDecimal.ROUND_HALF_DOWN).doubleValue();
         sumRate = BigDecimal.valueOf(sumRate).setScale(6, BigDecimal.ROUND_HALF_DOWN).doubleValue();
         double d = checkDoubleValue(sumRate / q);
+//        System.out.println(d +" "+sumRate+"/"+q);
         return d;
     }
 

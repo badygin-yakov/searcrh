@@ -4,7 +4,7 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class InvertedList {
+public class InvertedIndex {
     class Inverted {
         private String word;
         private ArrayList<Integer> wordList = new ArrayList<Integer>();
@@ -23,7 +23,7 @@ public class InvertedList {
         }
     }
 
-    public void getInvertedList() {
+    public void getInvertedIndex() {
         int i = 1;
         String path;
         Scanner sc = null;
