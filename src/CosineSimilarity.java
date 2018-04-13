@@ -1,25 +1,24 @@
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Scanner;
+import java.math.BigDecimal;
+import java.util.*;
 import java.lang.*;
 
 public class CosineSimilarity {
 
-
-    public ArrayList<CosSimRate> cosineSimilarity(String searchLine) {
+    public ArrayList<CosSimRate> getSearchResult(String searchLine) {
         ArrayList<Double> cosineSimilarity = new ArrayList<Double>();
         ArrayList<CosSimRate> sortResult = new ArrayList<CosSimRate>();
 
-        String[] searchWords = searchLine.split(" & ");
+        searchLine = searchLine.toLowerCase();
+        String[] searchWords = searchLine.split(" ");
         ArrayList<String> searchWordsList = new ArrayList<String>();
         ArrayList<Integer> searchWordsCount = new ArrayList<Integer>();
 
         for (int i = 0; i < searchWords.length; i++) {
-            searchWords[i] = searchWords[i].trim();
             searchWordsList.add(searchWords[i].trim());
+            System.out.print(searchWords[i] + " ");
         }
+        System.out.println();
 
         for (int i = 0; i < searchWordsList.size(); i++) {
             int count = 1;
@@ -34,112 +33,174 @@ public class CosineSimilarity {
             }
         }
 
-        //
+        //System.out.println(searchWordsList.size());
 
-        ArrayList<Double> queryIdf = tfIdfCounter(searchWordsList);
-
-
-        ArrayList<WordRate> wordsRateList = tfIdfCount(searchWordsList);
-        double queryWeight = 0.0;
+        ArrayList<ArrayList<Double>> queryValueRate = tfIdfCounter(searchWordsList);
         int maxDivision = 1;
-        for (int i=0;i<searchWordsCount.size();i++){
-            maxDivision = maxDivision<searchWordsCount.get(i) ? searchWordsCount.get(i):maxDivision;
+        for (int i = 0; i < searchWordsCount.size(); i++) {
+            maxDivision = maxDivision < searchWordsCount.get(i) ? searchWordsCount.get(i) : maxDivision;
         }
 
-        //веса по документам
-        System.out.println(queryIdf.size());
-        for (int i=1;i<queryIdf.size();i++) {
-            System.out.println(queryIdf.get(i).toString());
-            queryWeight += Math.pow(queryIdf.get(i), 2);
-        }
-
-        //пересчитать по TfIdf
-        queryWeight = Math.sqrt(queryWeight);
-
-
-        ArrayList<Double> lengthByDoc = new ArrayList<Double>();
-        for (int i=0;i<wordsRateList.get(0).getrateList().size();i++) {
-            double d = 0;
-            for (int j=0;j<wordsRateList.size();j++){
-                d += Math.pow(wordsRateList.get(j).getrateList().get(i),2);
+        ArrayList<Double> queryRateByDoc = new ArrayList<>();
+        for (int k = 0; k < queryValueRate.get(0).size(); k++) {
+            double d = 0.0;
+            for (int i = 0; i < queryValueRate.size(); i++) {
+                d += Math.pow(queryValueRate.get(i).get(k), 2);
             }
-            lengthByDoc.add(Math.sqrt(d));
+            queryRateByDoc.add(Math.sqrt(d));
         }
 
-        ArrayList<ArrayList<Double>> rateByPage = getRateByDoc();
-
-        for (int i=0;i<lengthByDoc.size();i++){
-            cosineSimilarity.add(cosSim(rateByPage.get(i),queryWeight));
+        if (maxDivision > 1) {
+            for (ArrayList<Double> divList : queryValueRate) {
+                for (int i = 0; i < divList.size(); i++) {
+                    double d = divList.get(i) / maxDivision;
+                    divList.set(i, d);
+                }
+            }
         }
 
+        ArrayList<Double> queryRate = new ArrayList<>();
+        for (int k = 0; k < queryValueRate.get(0).size(); k++) {
+            double d = 0.0;
+            for (int i = 0; i < queryValueRate.size(); i++) {
+                d += Math.pow(queryValueRate.get(i).get(k), 2);
+            }
+            queryRate.add(Math.sqrt(d));
+        }
+
+        ArrayList<ArrayList<Double>> rateByPage = getTfIdf();
+        ArrayList<Double> tfIdfRate = new ArrayList<>();
+        for (ArrayList<Double> page : rateByPage) {
+            double d = 0.0;
+            for (int i = 0; i < page.size(); i++) {
+                d += Math.pow(page.get(i), 2);
+            }
+            tfIdfRate.add(Math.sqrt(d));
+        }
+        for (int i = 0; i < queryRate.size(); i++) {
+            double d = cosSim(rateByPage.get(i), queryRateByDoc.get(i) * tfIdfRate.get(i));
+            cosineSimilarity.add(d);
+        }
 
         sortResult = sortResult(cosineSimilarity);
 
-        for (int i=0; i<sortResult.size();i++ ){
-//            System.out.println("rate:"+sortResult.get(i).getRate()+" index:"+sortResult.get(i).getPageIndex()+" "+sortResult.get(i).getPageRef());
+        boolean flag = true;
+        for (int i = 0; i < sortResult.size(); i++) {
+            if (sortResult.get(i).getRate() > 0.0) {
+                flag = false;
+            }
         }
+        if (flag) {
+            System.out.println("Поиск не дал результата!");
+        }
+
         return sortResult;
     }
 
-
-    public ArrayList<Double> tfIdfCounter(ArrayList<String> searchWordsList){
-        String csvFile = "tfIdf2.csv";
-        BufferedReader br = null;
+    public ArrayList<ArrayList<Double>> getTfIdf() {
+        String csvFile = Settings.TFIDF_FILE;
+        BufferedReader br;
         String line = "";
         String cvsSplitBy = ";";
-        ArrayList<Double> queryTfidf = new ArrayList<Double>();
-
-
+        ArrayList<ArrayList<String>> value = new ArrayList<ArrayList<String>>();
+        ArrayList<ArrayList<Double>> doubleValue = new ArrayList<ArrayList<Double>>();
 
         try {
+            //чтение и запись в ArrayList  tfIdf
             br = new BufferedReader(new FileReader(csvFile));
-            ArrayList<String[]> value = new ArrayList<String[]>();
-            String [] header = new String[1];
-
-
             line = br.readLine();
-            if (line != null) {
-                header = line.split(cvsSplitBy);
+            while ((line = br.readLine()) != null) {
+                line = line.substring(line.indexOf(';') + 1);
+                ArrayList<String> temp = new ArrayList(Arrays.asList(line.split(cvsSplitBy)));
+                value.add(temp);
             }
-
-
-            while((line = br.readLine())!=null){
-                value.add(line.split(cvsSplitBy));
-            }
-
-
-            for (int i = 0; i < searchWordsList.size(); i++) {
-                for (int k = 0; k < header.length; k++) {
-                    if (searchWordsList.get(i).equals(header[k])) {
-                        double d = 0.0;
-                        try {
-                            if (value.get().equals("Infinity")) {
-                                queryTfidf.add(d);
-                            } else {
-                                d = Double.parseDouble(tfIdfValue[1][k]);
-                                queryTfidf.add(d);
-                            }
-                        } catch (NumberFormatException e) {
-                            d = 0.0;
-                        }
+            for (ArrayList<String> toDouble : value) {
+                ArrayList<Double> temp = new ArrayList<Double>();
+                for (int i = 0; i < toDouble.size(); i++)  {
+                    if(!toDouble.get(i).equals("\"")) {
+                        toDouble.set(i,toDouble.get(i).substring(1,toDouble.get(i).length()-1));
                     }
-
+                    else {
+                        toDouble.remove(i);
+                    }
                 }
+                for (int i = 0; i < toDouble.size(); i++) {
+                    double d = Double.parseDouble(toDouble.get(i));
+                    d = checkDoubleValue(d);
+                    temp.add(d);
+                }
+                doubleValue.add(temp);
             }
             br.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-        return queryTfidf;
+        return doubleValue;
     }
 
-    public ArrayList<CosSimRate> sortResult(ArrayList<Double> sortByIndex){
+    public double checkDoubleValue(double doubleValue){
+        if (Double.isNaN(doubleValue) || Double.isInfinite(doubleValue)) {
+            doubleValue = 0.0;
+        }
+        return doubleValue;
+    }
+
+    public ArrayList<ArrayList<Double>> tfIdfCounter(ArrayList<String> searchWordsList) {
+        String csvFile = Settings.TFIDF_FILE;
+        BufferedReader bufferedReader;
+        String line;
+        String cvsSplitBy = ";";
+        ArrayList<ArrayList<String>> value = new ArrayList<ArrayList<String>>();
+        ArrayList<ArrayList<Double>> queryValue = new ArrayList<ArrayList<Double>>();
+
+        try {
+            //чтение и запись в ArrayList  tfIdf
+            bufferedReader = new BufferedReader(new FileReader(csvFile));
+            ArrayList<String> header = new ArrayList(Arrays.asList(new String[1]));
+            line = bufferedReader.readLine();
+            if (line != null) {
+                header = new ArrayList(Arrays.asList(line.split(cvsSplitBy)));
+                header.remove(0);
+            }
+            for (int i = 0; i < header.size(); i++)  {
+                header.set(i,header.get(i).substring(2,header.get(i).length()-1));
+            }
+            while ((line = bufferedReader.readLine()) != null) {
+                line = line.substring(line.indexOf(';') + 1);
+                ArrayList<String> temp = new ArrayList(Arrays.asList(line.split(cvsSplitBy)));
+                for (int i = 0; i < temp.size(); i++)  {
+                    if(!temp.get(i).equals("\"")) {
+                        temp.set(i,temp.get(i).substring(1,temp.get(i).length()-1));
+                    }
+
+                }
+                value.add(temp);
+            }
+
+            for (int i = 0; i < searchWordsList.size(); i++) {
+
+                int index = header.indexOf(searchWordsList.get(i));
+
+                ArrayList<Double> queryValueLine = new ArrayList<Double>();
+                for (ArrayList<String> pageValue : value) {
+                    double d = Double.parseDouble(pageValue.get(index+1));
+                    d = checkDoubleValue(d);
+                    queryValueLine.add(d);
+                }
+                queryValue.add(queryValueLine);
+            }
+            bufferedReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return queryValue;
+    }
+
+    public ArrayList<CosSimRate> sortResult(ArrayList<Double> sortByIndex) {
         ArrayList<CosSimRate> sort = new ArrayList<CosSimRate>();
         ArrayList<String> refPage = getPageIndex();
-        for (int i=0; i<refPage.size();i++ ){
-            sort.add(new CosSimRate(refPage.get(i),(i+1),sortByIndex.get(i)));
+        for (int i = 0; i < refPage.size(); i++) {
+            sort.add(new CosSimRate(refPage.get(i), (i + 1), sortByIndex.get(i)));
         }
 
         Collections.sort(sort, new Comparator<CosSimRate>() {
@@ -157,7 +218,7 @@ public class CosineSimilarity {
         ArrayList<String> searchResult = new ArrayList<String>();
         try {
             Scanner sc = null;
-            String path = "/Users/aydar/work/GogolSearch/visitedPage/index.txt";
+            String path = Settings.BASE_PATH + Settings.INDEX_FILE;
             sc = new Scanner(new File(path));
             while (sc.hasNextLine()) {
                 String checkStr = sc.nextLine();
@@ -172,18 +233,22 @@ public class CosineSimilarity {
     }
 
 
-    public double cosSim(ArrayList<Double> docRate, double q){
+    public double cosSim(ArrayList<Double> docRate, double q) {
         double sumRate = 0.0;
-        for (int i=0; i<docRate.size();i++){
-            sumRate+= Math.pow(docRate.get(i),2);
+        for (int i = 0; i < docRate.size(); i++) {
+            sumRate += Math.pow(docRate.get(i), 2);
         }
-        return sumRate/q;
+
+        q = BigDecimal.valueOf(q).setScale(6, BigDecimal.ROUND_HALF_DOWN).doubleValue();
+        sumRate = BigDecimal.valueOf(sumRate).setScale(6, BigDecimal.ROUND_HALF_DOWN).doubleValue();
+        double d = checkDoubleValue(sumRate / q);
+        return d;
     }
 
 
     public ArrayList<ArrayList<Double>> getRateByDoc() {
         ArrayList<ArrayList<Double>> WordsByPage = new ArrayList<ArrayList<Double>>();
-        String csvFile = "tfIdf.csv";
+        String csvFile = Settings.TFIDF_FILE;
         BufferedReader br = null;
         String line = "";
         String cvsSplitBy = ";";
@@ -192,11 +257,11 @@ public class CosineSimilarity {
         String[] bufAr = new String[0];
         try {
             br = new BufferedReader(new FileReader(csvFile));
-            while ((line=br.readLine())!=null) {
+            while ((line = br.readLine()) != null) {
                 double d = 0.0;
                 bufAr = line.split(cvsSplitBy);
                 try {
-                    for (int i=1;i<bufAr.length;i++) {
+                    for (int i = 1; i < bufAr.length; i++) {
                         if (bufAr[i].equals("NaN")) {
                             bufList.add(d);
                         } else {
@@ -221,31 +286,31 @@ public class CosineSimilarity {
 
     public ArrayList<WordRate> tfIdfCount(ArrayList<String> words) {
         ArrayList<WordRate> result = new ArrayList<WordRate>();
-        String path = "tfIdf.csv";
-        Scanner sc = null;
-        String[] header = new String[0];
+        String path = Settings.TFIDF_FILE;
+        Scanner sc;
+        String[] header;
         ArrayList<Integer> rateIndex = new ArrayList<Integer>();
-        String[] strIndex = new String[0];
+        String[] strIndex;
         try {
             sc = new Scanner(new File(path));
-            String buf = null;
+            String buf;
             if (sc.hasNextLine()) {
                 buf = sc.nextLine();
                 header = buf.split(";");
-                for (int i=0; i < header.length; i++) {
-                    for (int k = 0; k < words.size(); k++){
+                for (int i = 0; i < header.length; i++) {
+                    for (int k = 0; k < words.size(); k++) {
                         header[i] = header[i].trim();
-                        if(header[i].equals(words.get(k))){
+                        if (header[i].equals(words.get(k))) {
                             rateIndex.add(i);
                             break;
                         }
                     }
                 }
             }
-            for (int i=0; i<words.size();i++) {
+            for (int i = 0; i < words.size(); i++) {
                 result.add(new WordRate(words.get(i), new ArrayList<Integer>()));
             }
-            while(sc.hasNextLine()){
+            while (sc.hasNextLine()) {
                 buf = sc.nextLine();
                 strIndex = buf.split(";");
                 ArrayList<Double> rateList = new ArrayList<Double>();
@@ -271,19 +336,22 @@ public class CosineSimilarity {
     }
 }
 
-class CosSimRate{
+class CosSimRate {
     private double rate;
     private int pageIndex;
     private String pageRef;
-    public CosSimRate(String pageRef, int index, double rate){
+
+    public CosSimRate(String pageRef, int index, double rate) {
         this.rate = rate;
         this.pageIndex = index;
         this.pageRef = pageRef;
     }
+
     public double getRate() {
         return rate;
     }
-    public int getPageIndex(){
+
+    public int getPageIndex() {
         return pageIndex;
     }
 
@@ -292,11 +360,9 @@ class CosSimRate{
     }
 }
 
-
 class WordRate {
     private String word;
     private ArrayList<Double> rateList = new ArrayList<Double>();
-
     private ArrayList<Double> lengthList = new ArrayList<Double>();
 
     public WordRate(String str, ArrayList list) {

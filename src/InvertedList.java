@@ -81,7 +81,7 @@ public class InvertedList {
             wordIndex = new ArrayList<Integer>();
             i = 1;
         }
-        try (FileWriter writer = new FileWriter(Settings.BASE_PATH + "uniqWords12.txt", false)) {
+        try (FileWriter writer = new FileWriter(Settings.BASE_PATH + "uniqWords1.txt", false)) {
             String content = "";
             for (int j = 0; j < uniqWord.size(); j++) {
                 content = invertedList.get(j).getWord() + " " + invertedList.get(j).getWordList().toString();
